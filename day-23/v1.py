@@ -34,15 +34,14 @@ def getAnswer_2(data: str) -> int:
 
 
 def getAnswer(data: str, *, isPartTwo: bool) -> int:
-
     def pretty_cups():
         # Skriv om som list comprehension!
         s = list()
-        for i in range(len(cups)):
-            if i == curr_index:
-                s.append(f'({cups[i]})')
+        for c in cups:
+            if c == curr_label:
+                s.append(f'({c})')
             else:
-                s.append(f'{cups[i]}')
+                s.append(f' {c} ')
         return ' '.join(s)
 
     # The cups will be arranged in a circle and labeled clockwise (your puzzle input).
@@ -56,10 +55,10 @@ def getAnswer(data: str, *, isPartTwo: bool) -> int:
     highest_cup_label = max(cups)
 
     # Before the crab starts, it will designate the first cup in your list as the current cup.
-    curr_index = 0
+    curr_label = cups[0]
 
     # The crab is then going to do 100 moves.
-    num_moves = 4
+    num_moves = 100
 
     # Each move, the crab does the following actions:
     for m in range(1, num_moves + 1):
@@ -70,8 +69,9 @@ def getAnswer(data: str, *, isPartTwo: bool) -> int:
         # that are immediately clockwise of the current cup.
         # They are removed from the circle;
         # cup spacing is adjusted as necessary to maintain the circle.
-        picked_up = [cups.pop((curr_index+1) % len(cups)),
-                     cups.pop((curr_index+1) % len(cups)), cups.pop((curr_index+1) % len(cups))]
+        picked_up = [cups.pop((cups.index(curr_label)+1) % len(cups)),
+                     cups.pop((cups.index(curr_label)+1) % len(cups)),
+                     cups.pop((cups.index(curr_label)+1) % len(cups))]
         print(f'pick up: {picked_up}')
         print(f'cups: {pretty_cups()}')
 
@@ -81,32 +81,24 @@ def getAnswer(data: str, *, isPartTwo: bool) -> int:
         # the crab will keep subtracting one until it finds a cup that wasn't just picked up.
         # If at any point in this process the value goes below the lowest value on any cup's label,
         # it wraps around to the highest value on any cup's label instead.
-        curr_label = cups[curr_index]
         dest_label = curr_label - 1
-        # print(f'{curr_index=} {curr_label=} {dest_label=}')
         while dest_label not in cups:
-            # print(f'({dest_label=} not in cups)')
             dest_label -= 1
             if dest_label < lowest_cup_label:
                 dest_label = highest_cup_label
         dest_index = cups.index(dest_label)
-        # print(f'{dest_index=} ')
         print(f'destination: {dest_label}')
 
         # The crab places the cups it just picked up
         # so that they are immediately clockwise of the destination cup.
         # They keep the same order as when they were picked up.
-        # print(f'{curr_index=} {curr_label=} {dest_label=} {dest_index=}')
         cups[dest_index+1:dest_index+1] = picked_up
         print(f'cups: {pretty_cups()}')
 
         # The crab selects a new current cup:
         # the cup which is immediately clockwise of the current cup.
-        curr_index = cups.index(curr_label) + 1
-        # print(f'{curr_label=} {curr_index=}')
-        print(f'cups: {pretty_cups()}')
-
-        # Överväg att flytta upp tilldelningen av curr_index, och låta curr_label vara master.
+        new_index = (cups.index(curr_label)+1) % len(cups)
+        curr_label = cups[new_index]
 
         print()
 
@@ -114,13 +106,18 @@ def getAnswer(data: str, *, isPartTwo: bool) -> int:
     print(f'cups: {pretty_cups()}')
     print()
 
-    return 42
+    index1 = cups.index(1)
+    res = ''
+    for i in range(index1+1, index1+len(cups)):
+        res = res + str(cups[i % len(cups)])
+    print(res)
+
+    return int(res)
 
 
 def main() -> None:
-    getAndPrintAndAssertAndTimeAnswer(getAnswer_1, sample_1)
-    # getAndPrintAndAssertAndTimeAnswer(getAnswer_1, sample_2)
-    # getAndPrintAndAssertAndTimeAnswer(getAnswer_1, input)
+    getAndPrintAndAssertAndTimeAnswer(getAnswer_1, sample_1, 67384529)
+    getAndPrintAndAssertAndTimeAnswer(getAnswer_1, input, 27865934)
 
     # getAndPrintAndAssertAndTimeAnswer(getAnswer_2, sample_1)
     # getAndPrintAndAssertAndTimeAnswer(getAnswer_2, sample_2)
