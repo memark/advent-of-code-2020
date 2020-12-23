@@ -35,9 +35,10 @@ def getAnswer_2(data: str) -> int:
 
 def getAnswer(data: str, *, isPartTwo: bool) -> int:
     def pretty_cups():
+        new_cups = [*cups[0:3], cups[-3]] if isPartTwo else cups
         # Skriv om som list comprehension!
         s = list()
-        for c in cups:
+        for c in new_cups:
             if c == curr_label:
                 s.append(f'({c})')
             else:
@@ -51,19 +52,25 @@ def getAnswer(data: str, *, isPartTwo: bool) -> int:
 
     cups = [int(d) for d in data]
     L = len(cups)
+    if isPartTwo:
+        cups.extend(range(max(cups)+1, 1000000+1))
     lowest_cup_label = min(cups)
     highest_cup_label = max(cups)
+    print(lowest_cup_label, highest_cup_label)
 
     # Before the crab starts, it will designate the first cup in your list as the current cup.
     curr_label = cups[0]
 
-    # The crab is then going to do 100 moves.
-    num_moves = 100
+    # Part One: The crab is then going to do 100 moves.
+    # Part Two: After discovering where you made the mistake in translating Crab Numbers,
+    # you realize the small crab isn't going to do merely 100 moves;
+    # the crab is going to do ten million (10000000) moves!
+    num_moves = 100 if isPartTwo else 100
 
     # Each move, the crab does the following actions:
     for m in range(1, num_moves + 1):
-        print(f'-- move {m} --')
-        print(f'cups: {pretty_cups()}')
+        # print(f'-- move {m} --')
+        # print(f'cups: {pretty_cups()}')
 
         # The crab picks up the three cups
         # that are immediately clockwise of the current cup.
@@ -72,8 +79,8 @@ def getAnswer(data: str, *, isPartTwo: bool) -> int:
         picked_up = [cups.pop((cups.index(curr_label)+1) % len(cups)),
                      cups.pop((cups.index(curr_label)+1) % len(cups)),
                      cups.pop((cups.index(curr_label)+1) % len(cups))]
-        print(f'pick up: {picked_up}')
-        print(f'cups: {pretty_cups()}')
+        # print(f'pick up: {picked_up}')
+        # print(f'cups: {pretty_cups()}')
 
         # The crab selects a destination cup:
         # the cup with a label equal to the current cup's label minus one.
@@ -82,44 +89,53 @@ def getAnswer(data: str, *, isPartTwo: bool) -> int:
         # If at any point in this process the value goes below the lowest value on any cup's label,
         # it wraps around to the highest value on any cup's label instead.
         dest_label = curr_label - 1
-        while dest_label not in cups:
+        # while dest_label not in cups:
+        while dest_label in picked_up or dest_label == 0:
             dest_label -= 1
             if dest_label < lowest_cup_label:
                 dest_label = highest_cup_label
         dest_index = cups.index(dest_label)
-        print(f'destination: {dest_label}')
+        # print(f'destination: {dest_label}')
 
         # The crab places the cups it just picked up
         # so that they are immediately clockwise of the destination cup.
         # They keep the same order as when they were picked up.
+        # Att använda cups.insert() gav ingen skillnad i hastighet.
         cups[dest_index+1:dest_index+1] = picked_up
-        print(f'cups: {pretty_cups()}')
+        # print(f'cups: {pretty_cups()}')
 
         # The crab selects a new current cup:
         # the cup which is immediately clockwise of the current cup.
         new_index = (cups.index(curr_label)+1) % len(cups)
         curr_label = cups[new_index]
 
-        print()
+        # print()
 
-    print(f'-- final --')
-    print(f'cups: {pretty_cups()}')
-    print()
+    # print(f'-- final --')
+    # print(f'cups: {pretty_cups()}')
+    # print()
 
-    index1 = cups.index(1)
-    res = ''
-    for i in range(index1+1, index1+len(cups)):
-        res = res + str(cups[i % len(cups)])
-    print(res)
-
-    return int(res)
+    if not isPartTwo:
+        index1 = cups.index(1)
+        s = ''
+        for i in range(index1+1, index1+len(cups)):
+            s = s + str(cups[i % len(cups)])
+        # print(s)
+        return int(s)
+    else:
+        index1 = cups.index(1)
+        label_star_1 = int(cups[(index1+1) % len(cups)])
+        label_star_2 = int(cups[(index1+2) % len(cups)])
+        # print(label_star_1)
+        # print(label_star_2)
+        return label_star_1 * label_star_2
 
 
 def main() -> None:
-    getAndPrintAndAssertAndTimeAnswer(getAnswer_1, sample_1, 67384529)
+    # getAndPrintAndAssertAndTimeAnswer(getAnswer_1, sample_1, 67384529)
     getAndPrintAndAssertAndTimeAnswer(getAnswer_1, input, 27865934)
 
-    # getAndPrintAndAssertAndTimeAnswer(getAnswer_2, sample_1)
+    getAndPrintAndAssertAndTimeAnswer(getAnswer_2, sample_1, 12)  # För 100
     # getAndPrintAndAssertAndTimeAnswer(getAnswer_2, sample_2)
     # getAndPrintAndAssertAndTimeAnswer(getAnswer_2, input)
 
