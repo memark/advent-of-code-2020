@@ -21,27 +21,42 @@ main = do
 
 
 
-eval :: Memory -> Int -> PhaseSettings -> Output
+eval :: Memory -> Input -> Phases -> Outputs
 eval parsedData initialInput phaseSettings = outp5
-  where (outp5,_) = runProgram 0 inp5 [] parsedData
+  where outp5 = runProgram 0 inp5 [] parsedData
         inp5 = (phaseSettings !! 4):outp4
-        (outp4,_) = runProgram 0 inp4 [] parsedData
+        outp4 = runProgram 0 inp4 [] parsedData
         inp4 = (phaseSettings !! 3):outp3
-        (outp3,_) = runProgram 0 inp3 [] parsedData
+        outp3 = runProgram 0 inp3 [] parsedData
         inp3 = (phaseSettings !! 2):outp2
-        (outp2,_) = runProgram 0 inp2 [] parsedData
+        outp2 = runProgram 0 inp2 [] parsedData
         inp2 = (phaseSettings !! 1):outp1
-        (outp1,_) = runProgram 0 inp1 [] parsedData
+        outp1 = runProgram 0 inp1 [] parsedData
         inp1 = (phaseSettings !! 0):[initialInput]
 
 
-type PhaseSettings = [Int]
-type Input = [Int]
-type Output = [Int]
+type Phase = Int
+type Phases = [Phase]
+type Input = Int
+type Inputs = [Input]
+type Output = Int
+type Outputs = [Output]
 type Memory = [Int]
 
-runProgram :: Int -> Input -> Output -> Memory -> (Output, Memory)
-runProgram ip inp outp mem
+-- data Output2 = Output2 Int 
+-- data Result = O Int  |
+
+-- Två alternativ:
+-- 1. Köra programmet tills det ger output eller haltar.
+-- 1b. Köra programmet tills det kräver mer input än vad som finns eller haltar.
+-- 2. Köra programmet en instruktion i taget. Måste då ge resultat i form av vad som hände.
+
+runProgram :: Int -> Inputs -> Outputs -> Memory -> Outputs
+runProgram ip inp outp mem = fst $ runProgram' ip inp outp mem
+
+
+runProgram' :: Int -> Inputs -> Outputs -> Memory -> (Outputs, Memory)
+runProgram' ip inp outp mem
   | op == 01 = op_add
   | op == 02 = op_multiply
   | op == 03 = op_input
@@ -53,10 +68,10 @@ runProgram ip inp outp mem
   | op == 99 = (outp, mem)
 
   where
-    op_input         = runProgram (ip+1 + 1) (tail inp)        outp  (update p1 (head inp)  mem)
-    op_output        = runProgram (ip+1 + 1)       inp  (pv1 : outp)                        mem
-    jump nip         = runProgram nip              inp         outp                         mem
-    store val        = runProgram (ip+1 + 3)       inp         outp  (update p3 val         mem)
+    op_input         = runProgram' (ip+1 + 1) (tail inp)        outp  (update p1 (head inp)  mem)
+    op_output        = runProgram' (ip+1 + 1)       inp  (pv1 : outp)                        mem
+    jump nip         = runProgram' nip              inp         outp                         mem
+    store val        = runProgram' (ip+1 + 3)       inp         outp  (update p3 val         mem)
 
     op_add           = store (pv1 + pv2)
     op_multiply      = store (pv1 * pv2)
