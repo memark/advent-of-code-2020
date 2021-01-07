@@ -12,19 +12,18 @@ main = do
   input <- readFile "input.txt"
 
   -- Part One -- 116680
-  print . maximum . map (eval (parse input) 0) . List.permutations $ [0..4]
+  -- print . maximum . map (eval (parse input) 0) . List.permutations $ [0..4]
 
   -- Part Two -- 
+  print . map (eval' (parse sample_2a) 0) $ [[9,8,7,6,5]] -- . List.permutations $ [0..4]
 
 
   putStr ""
 
 
-
 eval :: Memory -> Input -> Phases -> Output
 eval parsedData initialInput phaseSettings = outp5
-  where 
-        outp5 = runProgram 0 inp5 parsedData
+  where outp5 = runProgram 0 inp5 parsedData
         inp5 = [phaseSettings !! 4,outp4]
         outp4 = runProgram 0 inp4 parsedData
         inp4 = [phaseSettings !! 3,outp3]
@@ -36,6 +35,32 @@ eval parsedData initialInput phaseSettings = outp5
         inp1 = (phaseSettings !! 0):[initialInput]
 
 
+eval' :: Memory -> Input -> Phases -> Outputs
+eval' mem ii ps = fst $ rec (mem,mem,mem,mem,mem) ii (ps!!0,ps!!1,ps!!2,ps!!3,ps!!4) 5
+
+type M = Memory
+type I = Input
+type O = Output
+type R = Result
+type P = Phase
+
+rec :: (M,M,M,M,M) -> I -> (P,P,P,P,P) -> Int -> ([O], (M,M,M,M,M))
+rec (m1,m2,m3,m4,m5) _ _ 0 = ([], (m1,m2,m3,m4,m5))
+rec (m1,m2,m3,m4,m5) ii (ps1,ps2,ps3,ps4,ps5) i = (outp5 : fst r2, snd r2)
+  where
+    r2 = rec (nm1,nm2,nm3,nm4,nm5) outp5 (ps1,ps2,ps3,ps4,ps5) (i-1)
+
+    (OutputResult _ outp5 nm5) = runProgram' 0 inp5 m5
+    inp5 = [ps5, outp4]
+    (OutputResult _ outp4 nm4) = runProgram' 0 inp4 m4
+    inp4 = [ps4, outp3]
+    (OutputResult _ outp3 nm3) = runProgram' 0 inp3 m3
+    inp3 = [ps3, outp2]
+    (OutputResult _ outp2 nm2) = runProgram' 0 inp2 m2
+    inp2 = [ps2, outp1]
+    (OutputResult _ outp1 nm1) = runProgram' 0 inp1 m1
+    inp1 = ps1:[ii]
+
 type Phase = Int
 type Phases = [Phase]
 type Input = Int
@@ -45,14 +70,7 @@ type Outputs = [Output]
 type Memory = [Int]
 type Pointer = Int
 
--- data OutputResult = OutputResult Output Pointer Memory
--- data HaltedResult = HaltedResult Memory
 data Result = OutputResult Pointer Output Memory | HaltedResult Memory
-
--- Två alternativ:
--- 1. Köra programmet tills det ger output eller haltar.
--- 1b. Köra programmet tills det kräver mer input än vad som finns eller haltar.
--- 2. Köra programmet en instruktion i taget. Måste då ge resultat i form av vad som hände.
 
 
 runProgram :: Pointer -> Inputs -> Memory -> Output
