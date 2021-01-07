@@ -5,6 +5,9 @@ sample_1a = "3,15,3,16,1002,16,10,16,1,16,15,15,4,15,99,0,0"
 sample_1b = "3,23,3,24,1002,24,10,24,1002,23,-1,23,101,5,23,23,1,24,23,23,4,23,99,0,0"
 sample_1c = "3,31,3,32,1002,32,10,32,1001,31,-2,31,1007,31,0,33,1002,33,7,33,1,33,31,31,1,32,31,31,4,31,99,0,0,0"
 
+sample_2a = "3,26,1001,26,-4,26,3,27,1002,27,2,27,1,27,26,27,4,27,1001,28,-1,28,1005,28,6,99,0,0,5"
+sample_2b = "3,52,1001,52,-5,52,3,53,1,52,56,54,1007,54,5,55,1005,55,26,1001,54,-5,54,1105,1,12,1,53,54,53,1008,54,0,55,1001,55,1,55,2,53,55,53,4,53,1001,56,-1,56,1005,56,6,99,0,0,0,0,10"
+
 main = do
   input <- readFile "input.txt"
 
@@ -13,22 +16,22 @@ main = do
 
   -- Part Two -- 
 
-  
+
   putStr ""
 
 
 
 eval :: Memory -> Int -> PhaseSettings -> Output
 eval parsedData initialInput phaseSettings = outp5
-  where outp5 = runProgram 0 inp5 [] parsedData
+  where (outp5,_) = runProgram 0 inp5 [] parsedData
         inp5 = (phaseSettings !! 4):outp4
-        outp4 = runProgram 0 inp4 [] parsedData
+        (outp4,_) = runProgram 0 inp4 [] parsedData
         inp4 = (phaseSettings !! 3):outp3
-        outp3 = runProgram 0 inp3 [] parsedData
+        (outp3,_) = runProgram 0 inp3 [] parsedData
         inp3 = (phaseSettings !! 2):outp2
-        outp2 = runProgram 0 inp2 [] parsedData
+        (outp2,_) = runProgram 0 inp2 [] parsedData
         inp2 = (phaseSettings !! 1):outp1
-        outp1 = runProgram 0 inp1 [] parsedData
+        (outp1,_) = runProgram 0 inp1 [] parsedData
         inp1 = (phaseSettings !! 0):[initialInput]
 
 
@@ -37,7 +40,7 @@ type Input = [Int]
 type Output = [Int]
 type Memory = [Int]
 
-runProgram :: Int -> Input -> Output -> Memory -> Output
+runProgram :: Int -> Input -> Output -> Memory -> (Output, Memory)
 runProgram ip inp outp mem
   | op == 01 = op_add
   | op == 02 = op_multiply
@@ -47,7 +50,7 @@ runProgram ip inp outp mem
   | op == 06 = op_jump_if_false
   | op == 07 = op_less_than
   | op == 08 = op_equals
-  | op == 99 = outp
+  | op == 99 = (outp, mem)
 
   where
     op_input         = runProgram (ip+1 + 1) (tail inp)        outp  (update p1 (head inp)  mem)
