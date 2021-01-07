@@ -16,6 +16,7 @@ main = do
 
   -- Part Two -- 
   print . map (eval' (parse sample_2a) 0) $ [[9,8,7,6,5]] -- . List.permutations $ [0..4]
+  print . map (eval' (parse sample_2b) 0) $ [[9,7,8,5,6]] -- . List.permutations $ [0..4]
 
 
   putStr ""
@@ -36,7 +37,7 @@ eval parsedData initialInput phaseSettings = outp5
 
 
 eval' :: Memory -> Input -> Phases -> Outputs
-eval' mem ii ps = fst $ rec (mem,mem,mem,mem,mem) ii (ps!!0,ps!!1,ps!!2,ps!!3,ps!!4) 5
+eval' mem ii ps = fst $ rec (mem,mem,mem,mem,mem) ii (ps!!0,ps!!1,ps!!2,ps!!3,ps!!4) 50
 
 type M = Memory
 type I = Input
