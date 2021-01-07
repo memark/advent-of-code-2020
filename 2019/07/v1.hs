@@ -12,7 +12,7 @@ main = do
   input <- readFile "input.txt"
 
   -- Part One -- 116680
-  print . head . maximum . map (eval (parse input) 0) . List.permutations $ [0..4]
+  print . maximum . map (eval (parse input) 0) . List.permutations $ [0..4]
 
   -- Part Two -- 
 
@@ -21,17 +21,18 @@ main = do
 
 
 
-eval :: Memory -> Input -> Phases -> Outputs
+eval :: Memory -> Input -> Phases -> Output
 eval parsedData initialInput phaseSettings = outp5
-  where outp5 = runProgram 0 inp5 [] parsedData
-        inp5 = (phaseSettings !! 4):outp4
-        outp4 = runProgram 0 inp4 [] parsedData
-        inp4 = (phaseSettings !! 3):outp3
-        outp3 = runProgram 0 inp3 [] parsedData
-        inp3 = (phaseSettings !! 2):outp2
-        outp2 = runProgram 0 inp2 [] parsedData
-        inp2 = (phaseSettings !! 1):outp1
-        outp1 = runProgram 0 inp1 [] parsedData
+  where 
+        outp5 = runProgram 0 inp5 parsedData
+        inp5 = [phaseSettings !! 4,outp4]
+        outp4 = runProgram 0 inp4 parsedData
+        inp4 = [phaseSettings !! 3,outp3]
+        outp3 = runProgram 0 inp3 parsedData
+        inp3 = [phaseSettings !! 2,outp2]
+        outp2 = runProgram 0 inp2 parsedData
+        inp2 = [phaseSettings !! 1,outp1]
+        outp1 = runProgram 0 inp1 parsedData
         inp1 = (phaseSettings !! 0):[initialInput]
 
 
@@ -42,21 +43,25 @@ type Inputs = [Input]
 type Output = Int
 type Outputs = [Output]
 type Memory = [Int]
+type Pointer = Int
 
--- data Output2 = Output2 Int 
--- data Result = O Int  |
+-- data OutputResult = OutputResult Output Pointer Memory
+-- data HaltedResult = HaltedResult Memory
+data Result = OutputResult Pointer Output Memory | HaltedResult Memory
 
 -- Två alternativ:
 -- 1. Köra programmet tills det ger output eller haltar.
 -- 1b. Köra programmet tills det kräver mer input än vad som finns eller haltar.
 -- 2. Köra programmet en instruktion i taget. Måste då ge resultat i form av vad som hände.
 
-runProgram :: Int -> Inputs -> Outputs -> Memory -> Outputs
-runProgram ip inp outp mem = fst $ runProgram' ip inp outp mem
+
+runProgram :: Pointer -> Inputs -> Memory -> Output
+runProgram ip inp mem = o
+  where (OutputResult _ o _) = runProgram' ip inp mem
 
 
-runProgram' :: Int -> Inputs -> Outputs -> Memory -> (Outputs, Memory)
-runProgram' ip inp outp mem
+runProgram' :: Pointer -> Inputs -> Memory -> Result
+runProgram' ip inp mem
   | op == 01 = op_add
   | op == 02 = op_multiply
   | op == 03 = op_input
@@ -65,20 +70,22 @@ runProgram' ip inp outp mem
   | op == 06 = op_jump_if_false
   | op == 07 = op_less_than
   | op == 08 = op_equals
-  | op == 99 = (outp, mem)
+  | op == 99 = op_halt
 
   where
-    op_input         = runProgram' (ip+1 + 1) (tail inp)        outp  (update p1 (head inp)  mem)
-    op_output        = runProgram' (ip+1 + 1)       inp  (pv1 : outp)                        mem
-    jump nip         = runProgram' nip              inp         outp                         mem
-    store val        = runProgram' (ip+1 + 3)       inp         outp  (update p3 val         mem)
-
+    jump nip         = runProgram' nip              inp                        mem
+    store val        = runProgram' (ip+1 + 3)       inp  (update p3 val        mem)
+    op_input         = runProgram' (ip+1 + 1) (tail inp) (update p1 (head inp) mem)
+    
     op_add           = store (pv1 + pv2)
     op_multiply      = store (pv1 * pv2)
-    op_less_than     = store (if pv1 <  pv2 then 1 else 0)
-    op_equals        = store (if pv1 == pv2 then 1 else 0)
-    op_jump_if_true  = jump  (if pv1 /= 0 then pv2 else ip+1 + 2)
-    op_jump_if_false = jump  (if pv1 == 0 then pv2 else ip+1 + 2)
+    op_less_than     = store (if pv1 <  pv2 then 1   else 0)
+    op_equals        = store (if pv1 == pv2 then 1   else 0)
+    op_jump_if_true  = jump  (if pv1 /= 0   then pv2 else ip+1 + 2)
+    op_jump_if_false = jump  (if pv1 == 0   then pv2 else ip+1 + 2)
+    
+    op_output        = OutputResult (ip+1 + 1) pv1 mem
+    op_halt          = HaltedResult mem
 
     (op, p1m, p2m, p3m) = getModes $ mem !! ip
     p1  = mem !! (ip + 1)
