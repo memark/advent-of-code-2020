@@ -1,6 +1,6 @@
 import qualified Data.Char as Char
 import qualified Data.List as List
-import qualified Data.Set as Set
+import qualified Data.Map as Map
 
 sample_1a = "109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99"
 sample_1b = "1102,34915192,34915192,7,4,7,99,0"
@@ -8,20 +8,28 @@ sample_1c = "104,1125899906842624,99"
 
 main = do
   input <- readFile "input.txt"
+  input_05 <- readFile "../05/input.txt"
 
-  print (runProgram 0 0 [] [] . parse $ sample_1a)
+  -- print (parse $ sample_1a)
+  -- print (parse_ $ sample_1a)
 
-  -- Part One -- 5346030
-  -- print (runProgram 0 [1] [] . parse $ input)
+  print (runProgram 0 0 [1] [] . parse_ $ input_05)
 
-  -- Part Two -- 513116
-  -- print (runProgram 0 [5] [] . parse $ input)
+
+  -- print (runProgram 0 0 [] [] . parse_ $ sample_1b)
+
+  -- Part One -- 
+  print (runProgram 0 0 [1] [] . parse_ $ input)
+
+  -- Part Two -- 
 
   putStr ""
 
+-- 203, too low
+
 type Input = [Int]
 type Output = [Int]
-type Memory = [Int]
+type Memory = Map.Map Int Int --[Int]
 type RelBase = Int
 
 runProgram :: Int -> RelBase -> Input -> Output -> Memory -> Output
@@ -38,12 +46,12 @@ runProgram ip rb inp outp mem
   | op == 99 = outp
 
   where
-    op_input         = runProgram (ip+1 + 1) rb         (tail inp)        outp  (update p1 (head inp) mem)
-    op_output        = runProgram (ip+1 + 1) rb               inp  (pv1 : outp)                       mem
-    jump nip         = runProgram nip        rb               inp         outp                        mem
-    store val        = runProgram (ip+1 + 3) rb               inp         outp  (update p3 val        mem)
+    op_input         = runProgram (ip+1 + 1) rb         (tail inp)        outp  (update_ p1 (head inp) mem)
+    op_output        = runProgram (ip+1 + 1) rb               inp  (pv1 : outp)                        mem
+    jump nip         = runProgram nip        rb               inp         outp                         mem
+    store val        = runProgram (ip+1 + 3) rb               inp         outp  (update_ p3 val        mem)
 
-    op_rel_base_offs = runProgram (ip+1 + 1) (rb + pv1)       inp         outp                        mem
+    op_rel_base_offs = runProgram (ip+1 + 1) (rb + pv1)       inp         outp                         mem
 
     op_add           = store (pv1 + pv2)
     op_multiply      = store (pv1 * pv2)
@@ -52,22 +60,23 @@ runProgram ip rb inp outp mem
     op_jump_if_true  = jump  (if pv1 /= 0 then pv2 else ip+1 + 2)
     op_jump_if_false = jump  (if pv1 == 0 then pv2 else ip+1 + 2)
 
-    (op, p1m, p2m, p3m) = getModes $ mem !! ip
-    p1  = mem !! (ip + 1)
-    p2  = mem !! (ip + 2)
-    p3  = mem !! (ip + 3)
-    -- pv1 = if p1m == 1 then p1 else mem !! p1 -- 2 relative mode
-    -- pv2 = if p2m == 1 then p2 else mem !! p2
+    (op, p1m, p2m, p3m) = getModes $ mem !!! ip
+    p1 = mem !!! (ip + 1)
+    p2 = mem !!! (ip + 2)
+    p3 = mem !!! (ip + 3)
 
-    pv1 =
-      case p1m of 0 -> mem !! p1
-                  1 -> p1
-                  2 -> mem !! (rb + p1)
-    pv2 =
-      case p1m of 0 -> mem !! p2
-                  1 -> p2
-                  2 -> mem !! (rb + p2)
-              
+    pv1 = gv p1m p1
+    pv2 = gv p2m p2
+
+    gv pm p =
+      case pm of 0 -> mem !!! p
+                 1 -> p
+                 2 -> mem !!! (rb + p)
+
+(!!!) m k = res
+  where Just res = Map.lookup k m
+  -- where res = Map.findWithDefault 0 k m
+
 getModes opx =
   ( opx `mod` 100,
     opx `div` 100 `mod` 10,
@@ -77,7 +86,16 @@ getModes opx =
 
 update n x a = take n a ++ [x] ++ drop (n + 1) a
 
+update_ = Map.insert
+
 parse = map toInt . splitBy ',' . trim
+
+parse_ = Map.fromList . indexed . parse
+
+indexed = go 0
+  where
+    go i (a:as) = (i, a) : go (i + 1) as
+    go _ _      = []
 
 toInt x = read x :: Int
 
