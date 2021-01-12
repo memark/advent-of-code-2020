@@ -1,11 +1,11 @@
 import qualified Data.Char as Char
 import qualified Data.List as List
 import qualified Data.Map.Strict as Map
-import Data.Map.Strict ((!), Map)
+import Data.Map.Strict ((!), (!?), Map)
 import qualified Data.Set as Set
 import qualified Control.Exception as Ex
 import qualified Control.Monad
-import Text.Printf ()
+import Text.Printf ( printf )
 import Data.Tuple.Select ()
 import Data.List.Split (splitOn)
 
@@ -18,21 +18,17 @@ sample_1a = "\
 \7 A, 1 D => 1 E\n\
 \7 A, 1 E => 1 FUEL"
 
-sample_1 = "\
-\2 ORE => 3 A\n\
-\6 A => 1 FUEL"
-
 -- \3 ORE => 1 B\n\
--- \3 A, 1 B => 1 FUEL"makeChem' :: [R] -> Map C Q -> C -> Q
+-- \3 A, 1 B => 1 FUEL
 
 type C = String
 type Q = Int
 type I = (Q, C)
 type O = (Q, C)
 type R = ([I], O)
-type T = Map Q C
+type T = Map C Q
 
-type RS = Map C (Q, Map C Q)
+type RS = Map C (Q, [(C, Q)])
 
 main = do
   putStrLn ""
@@ -45,27 +41,68 @@ main = do
   -- print $ makeChem d "FUEL"
   -- putStrLn ""
 
-  let d' = parse' sample_1a
-  print d'
+  -- let rs' = parse' sample_2
+  -- test rs' "A"
+  -- test rs' "B"
+  -- test rs' "FUEL"
+  -- putStrLn ""
+
+  let rs' = parse' sample_3
+  print rs'
+  putStrLn ""
+  test rs' "A"
+  test rs' "B"
+  test rs' "FUEL"
   putStrLn ""
 
   -- Part One -- 
-
   -- Part Two -- 
-
   putStr ""
 
 
+test rs' c =
+  printf "%4s => %2d (%s)\n" c (fst res) (show $ snd res)
+    where res = makeChem' rs' Map.empty c
 
-makeChem' :: RS -> T -> C -> Q
-makeChem' _ _ "ORE" = 1
-makeChem' rs t c =
+sample_1 = "\
+\4 ORE => 3 A\n\
+\7 A => 1 FUEL"
+
+sample_2 = "\
+\2 ORE => 3 A\n\
+\2 A => 1 B\n\
+\2 B => 1 FUEL"
+
+sample_3 = "\
+\1 ORE => 1 A\n\
+\1 A => 1 B\n\
+\1 A, 1 B => 1 FUEL"
+
+
+makeChem' :: RS -> T -> C -> (Q, T)
+makeChem' _ t "ORE" = (1, t)
+makeChem' rs t c = 
   let
-    (q,is) = rs ! c
-    f = foldl ff ' is 
-    ff acc x = 
+    -- bryt ut och gör samma sak som nedan fast för "is"
+    (q, (ic,iq):is) = rs!c
+      where a = 2 -- det går bra att ha where på detta sätt
+    have = Map.findWithDefault 0 ic t
+    need = iq - have
+    batchSize = fst $ Map.findWithDefault (1,[]) ic rs
+    noBatches = getNoBatches need batchSize
+    made = noBatches * batchSize
+    left = made - need
+    t' = Map.insert ic left t
+    rec = makeChem' rs t' ic
+    cost = noBatches * fst rec
   in
-    1
+    (cost, snd rec)
+
+
+getNoBatches need batch =
+  if need `mod` batch == 0
+  then need `div` batch
+  else need `div` batch + 1
 
 
 parse' :: String -> Map C (Q, [(C, Q)])
@@ -86,18 +123,17 @@ parse' = Map.fromList . map parseLine . lines . trim
     parseNumChem b = case splitOn " " b of [q,c] -> (c, read q :: Int)
 
 
-makeChem d "ORE" = 1
-makeChem d chem = sum $ map (\ i -> fst i * makeChem d (snd i) `div` oq) is
+makeChem rs "ORE" = 1
+makeChem rs chem = sum $ map (\ i -> fst i * makeChem rs (snd i) `div` oq) is
   where 
     (oq,oc) = o
-    (is,o) = r
-    r = findR d chem
+    (is,o) = findR rs chem
 
 
 findR :: [R] -> C -> R
-findR d oc =
-  case f d of Just c -> c
-              Nothing -> error (show oc ++ " was not found")
+findR rs oc =
+  case f rs of Just c -> c
+               Nothing -> error (show oc ++ " was not found")
     where f = List.find (\ (is,o) -> snd o == oc)
 
 
